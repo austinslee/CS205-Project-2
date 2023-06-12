@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstdlib> //for rand()
+#include <cmath> //for sqrt()
 
 #include "entry.hpp"
 
@@ -17,6 +18,20 @@
 //Implement Accuracy/cross-validation.
 //Find real-world classification dataset and modify/clean data to work with existing code.
 
+// Helper function to calculate distance in order to find nearest neighbor
+// takes features from two data points and returns euclidean distance between them
+float euclidean(std::vector<float> x, std::vector<float> y){
+	float sum = 0;
+	float diff, square;
+
+	for(int i = 0; i < x.size(); i++){
+		diff = x.at(i) - y.at(i);
+		square = diff*diff;
+		sum += square;
+ 	}
+
+	return sqrt(sum);
+}
 
 
 // Stub functions for accuracy. Will implement later
@@ -153,8 +168,6 @@ std::vector<Entry> getData(std::string input) {
 }
 
 
-
-
 //Birthdays: 07/21 and 06/21. So that means we would use small dataset 21, large dataset 21, and XXXlarge dataset 13.
 int main() {
 	std::string input;
@@ -179,7 +192,14 @@ int main() {
 			std::cout << ", " << data.at(i).features.at(j);
 		}
 	}*/
+
+	}
+
+	float dist =  euclidean(data.at(20).features, data.at(30).features);
+	std::cout << "\nEuclidean distance between entry 21 and 31: " << dist<< std::endl;
 }
+
+
 
 
 #endif //__MAIN_CPP__
