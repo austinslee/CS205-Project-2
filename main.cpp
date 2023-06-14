@@ -6,37 +6,46 @@
 #include <fstream>
 #include <algorithm>
 #include <climits>
-#include <cstdlib> //for rand()
 #include <cmath> //for sqrt()
 
 #include "entry.hpp"
 
 //Tasks to do in order:
-//Implement getData. Done and tested
-//Implement feature_search_demo with Forwards Selection. Done but not tested.
-//Implement feature_search_demo with Backwards Elimination. Done but not tested.
-//Implement Accuracy/cross-validation.
+//Implement getData. Implemented. Tested.
+//Implement feature_search_demo with Forwards Selection. Implemented. Tested.
+//Implement feature_search_demo with Backwards Elimination. Implemented. Tested.
+//Implement Accuracy/cross-validation. Implemented. Tested.
 //Find real-world classification dataset and modify/clean data to work with existing code.
 
-// Helper function to calculate distance in order to find nearest neighbor
-// takes features from two data points and returns euclidean distance between them
-float euclidean(std::vector<float> x, std::vector<float> y){
-	float sum = 0;
-	float diff, square;
 
-	for(int i = 0; i < x.size(); i++){
-		diff = x.at(i) - y.at(i);
-		square = diff*diff;
-		sum += square;
- 	}
-
-	return sqrt(sum);
-}
-
-
-// Stub functions for accuracy. Will implement later
-double accuracy() {
-	return rand();
+// Accuracy function. Determines accuracy of our classifier using leave-one-out evaluation
+double accuracy(std::vector<Entry> data, std::vector<int> currentSet) {
+	double num_correctly_classified = 0;
+	bool within;
+	for(int i = 0; i < data.size(); ++i) {
+		double nn_distance = std::numeric_limits<double>::max();
+		Entry object_to_classify;
+		for(int k = 0; k < data.size(); ++k) {
+			if(k != i) {
+				double distance = 0.0;
+				for(int x = 0; x < data.at(0).features.size();++x) {
+					auto it = std::find(currentSet.begin(), currentSet.end(), x);
+					if(it != currentSet.end()) {
+						distance += pow(data.at(i).features.at(x) - data.at(k).features.at(x), 2);                  
+					}
+				}
+				distance = sqrt(distance);
+				if(distance < nn_distance) {
+					nn_distance = distance;
+					object_to_classify = data.at(k);
+				}
+			}
+		}
+		if(object_to_classify.classification == data.at(i).classification) {
+			num_correctly_classified++;
+		}
+	}
+	return num_correctly_classified / data.size();
 }
 
 void forwards_selection(std::vector<Entry> data) {
@@ -59,7 +68,7 @@ void forwards_selection(std::vector<Entry> data) {
 			std::cout << "--Considering adding the " << k << " feature which would give an accuracy of ";
 			//Check here during testing. Call with currFeatures
 			currFeatures.push_back(k);
-			currAccuracy = accuracy();
+			currAccuracy = accuracy(data, currFeatures);
 			currFeatures.pop_back();
 			std::cout << currAccuracy << "\n";
 			if(currAccuracy > bestSoFarAccuracy) {
@@ -72,13 +81,25 @@ void forwards_selection(std::vector<Entry> data) {
 			bestFeatures = currFeatures;
 			bestAccuracy = bestSoFarAccuracy;
 		}
+		else{
+			std::cout << "Accuracy went down. stopping search"<< std::endl;
+			break;
+		}
+
 		std::cout << "On level " << i << " I added " << featureToAdd << " to current set.\n";
 		std::cout << "Current feature set is ";
 		for(int k = 0; k < currFeatures.size(); ++k) {
 			std::cout << currFeatures.at(k) << " ";
 		}
 		std::cout << "\n";
+
 	}
+	std::cout << "\nHighest accuracy: " << bestAccuracy << "\n";
+	std::cout << "Using feature set: ";
+	for(int i = 0; i < bestFeatures.size(); ++i) {
+		std::cout << bestFeatures.at(i) << ", ";
+	}
+	
 	
 }
 
@@ -107,34 +128,44 @@ void backwards_elimination(std::vector<Entry> data) {
                         std::cout << "--Considering removing the " << k << " feature which would give an accuracy of ";
 
 			
-			tempFeatures.clear();
-			for(int x = 0; x < currFeatures.size(); ++x) {
-				if(currFeatures.at(x) != k) {
-					tempFeatures.push_back(currFeatures.at(x));
-				}
-			}
-
-		
-			//call with tempFeatures
-                        currAccuracy = accuracy();
-			std::cout << currAccuracy << "\n";
+						tempFeatures.clear();
+						for(int x = 0; x < currFeatures.size(); ++x) {
+							if(currFeatures.at(x) != k) {
+								tempFeatures.push_back(currFeatures.at(x));
+							}
+						}
+                        currAccuracy = accuracy(data, tempFeatures);
+						std::cout << currAccuracy << "\n";
                         if(currAccuracy > bestSoFarAccuracy) {
                                 bestSoFarAccuracy = currAccuracy;
                                 featureToRemove = k;
-				temp1 = tempFeatures;
+								temp1 = tempFeatures;
                         }
                 }
-		currFeatures = temp1;
+				currFeatures = temp1;
                 if(bestAccuracy < bestSoFarAccuracy) {
                         bestFeatures = currFeatures;
                         bestAccuracy = bestSoFarAccuracy;
                 }
+				else{
+					std::cout << "Accuracy went down. stopping search"<< std::endl;
+					break;
+				}
                 std::cout << "On level " << i << " I removed " << featureToRemove << " from the current set.\n";
                 std::cout << "Current feature set is ";
-                for(int k = 0; k < currFeatures.size(); ++k) {
-                        std::cout << currFeatures.at(k) << " ";
-                }
+				if(currFeatures.empty()) {
+					std::cout << "empty.";
+				} else {
+	                for(int k = 0; k < currFeatures.size(); ++k) {
+        	                std::cout << currFeatures.at(k) << " ";
+                	}
+				}
                 std::cout << "\n";
+        }
+        std::cout << "\nHighest accuracy: " << bestAccuracy << "\n";
+        std::cout << "Using feature set: ";
+        for(int i = 0; i < bestFeatures.size(); ++i) {
+                std::cout << bestFeatures.at(i) << ", ";
         }
 
 }
@@ -146,6 +177,9 @@ void backwards_elimination(std::vector<Entry> data) {
 //Don't forget that the first feature listed in the Entry is the class. Might change later to store class into a separate variable.
 std::vector<Entry> getData(std::string input) {
 	std::vector<Entry> toReturn;
+	int numFeatures = 0;
+	int numInstances = 0;
+	bool track = true;
 	std::ifstream inFS;
 	inFS.open(input);
 	if(!inFS) {
@@ -156,14 +190,21 @@ std::vector<Entry> getData(std::string input) {
 	Entry tempEntry;
 	std::string line;
 	while(getline(inFS, line)) {
+		++numInstances;
 		std::stringstream sstream(line);
 		sstream >> feature;
+		tempEntry.classification = feature;
 		while(sstream >> feature) {
+			if(track == true) {
+				++numFeatures;
+			}
 			tempEntry.features.push_back(feature);
 		}
+		track = false;
 		toReturn.push_back(tempEntry);
 		tempEntry.features.clear();
 	}
+	std::cout << "This dataset has " << numFeatures << " features (not including the class attribute), with " << numInstances << " instances.\n";
 	return toReturn;
 }
 
@@ -183,20 +224,15 @@ int main() {
 		std::cout << "ERROR: invalid input.\n";
 	}
 	std::vector<Entry> data = getData(input);
-	//forwards_selection(data);
-	backwards_elimination(data);
-	/*
-	for(unsigned i = 0; i < data.size(); ++i) {
-		std::cout << "\nEntry #" << i << ":";
-		for(unsigned j = 0; j < data.at(i).features.size(); ++j) {
-			std::cout << ", " << data.at(i).features.at(j);
-		}
-	}*/
-
+	std::cout << "Enter 1 for Forwards Selection, 2 for Backwards Elimination\n";
+	std::cin >> input;
+	if(input == "1") {
+		forwards_selection(data);
+	} else if(input == "2") {
+		backwards_elimination(data);
+	} else {
+		std::cout << "ERROR: invalid input\n";
 	}
-
-	float dist =  euclidean(data.at(20).features, data.at(30).features);
-	std::cout << "\nEuclidean distance between entry 21 and 31: " << dist<< std::endl;
 }
 
 
