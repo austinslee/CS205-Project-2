@@ -212,7 +212,7 @@ std::vector<Entry> getData(std::string input) {
 //Birthdays: 07/21 and 06/21. So that means we would use small dataset 21, large dataset 21, and XXXlarge dataset 13.
 int main() {
 	std::string input;
-	std::cout << "Enter 1 for small dataset, 2 for large dataset, and 3 for XXXlarge dataset.\n";
+	std::cout << "Enter 1 for small dataset, 2 for large dataset, 3 for XXXlarge dataset, or 4 for real-world dataset.\n";
 	std::cin >> input;
 	if(input == "1") {
 		input = "CS170_small_Data__21.txt";
@@ -220,6 +220,8 @@ int main() {
 		input = "CS170_large_Data__21.txt";
 	} else if(input == "3") {
 		input = "CS170_XXXlarge_Data__13.txt";
+	} else if(input == "4") {
+		input = "realWorld.txt";
 	} else {
 		std::cout << "ERROR: invalid input.\n";
 	}
