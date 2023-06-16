@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <climits>
 #include <cmath> //for sqrt()
+#include <chrono>
+#include <algorithm>
+using namespace std::chrono;
 
 #include "entry.hpp"
 
@@ -48,7 +51,7 @@ double accuracy(std::vector<Entry> data, std::vector<int> currentSet) {
 	return num_correctly_classified / data.size();
 }
 
-void forwards_selection(std::vector<Entry> data) {
+void forwards_selection(std::vector<Entry> data,std::string ea) {
 	std::vector<int> currFeatures; //Tracks the current set of features used
 	std::vector<int> bestFeatures; //Tracks the set of features used by the highest accuracy feature set
 	double bestAccuracy; //Tracks the highest accuracy
@@ -65,12 +68,12 @@ void forwards_selection(std::vector<Entry> data) {
 			if(result != currFeatures.end()) { 
 				continue;
 			} 
-			std::cout << "--Considering adding the " << k << " feature which would give an accuracy of ";
+			std::cout << "--Considering adding the " << k+1 << " feature which would give an accuracy of ";
 			//Check here during testing. Call with currFeatures
 			currFeatures.push_back(k);
 			currAccuracy = accuracy(data, currFeatures);
 			currFeatures.pop_back();
-			std::cout << currAccuracy << "\n";
+			std::cout << std::setprecision(4)<< currAccuracy << "\n";
 			if(currAccuracy > bestSoFarAccuracy) {
 				bestSoFarAccuracy = currAccuracy;
 				featureToAdd = k;
@@ -81,29 +84,29 @@ void forwards_selection(std::vector<Entry> data) {
 			bestFeatures = currFeatures;
 			bestAccuracy = bestSoFarAccuracy;
 		}
-		else{
+		if(bestAccuracy> bestSoFarAccuracy && ea == "y"){
 			std::cout << "Accuracy went down. stopping search"<< std::endl;
 			break;
 		}
 
-		std::cout << "On level " << i << " I added " << featureToAdd << " to current set.\n";
+		std::cout << "On level " << i << " I added " << featureToAdd+1 << " to current set.\n";
 		std::cout << "Current feature set is ";
 		for(int k = 0; k < currFeatures.size(); ++k) {
-			std::cout << currFeatures.at(k) << " ";
+			std::cout << currFeatures.at(k)+1 << " ";
 		}
 		std::cout << "\n";
 
 	}
-	std::cout << "\nHighest accuracy: " << bestAccuracy << "\n";
+	std::cout << "\nHighest accuracy: " << std::setprecision(4) << bestAccuracy << "\n";
 	std::cout << "Using feature set: ";
 	for(int i = 0; i < bestFeatures.size(); ++i) {
-		std::cout << bestFeatures.at(i) << ", ";
+		std::cout << bestFeatures.at(i)+1 << ", ";
 	}
 	
 	
 }
 
-void backwards_elimination(std::vector<Entry> data) {
+void backwards_elimination(std::vector<Entry> data,std::string ea) {
         std::vector<int> currFeatures; //Tracks the current set of features used
         std::vector<int> bestFeatures; //Tracks the set of features used by the highest accuracy feature set
         double bestAccuracy; //Tracks the highest accuracy
@@ -125,7 +128,7 @@ void backwards_elimination(std::vector<Entry> data) {
                         if(result == currFeatures.end()) {
                                 continue;
                         }
-                        std::cout << "--Considering removing the " << k << " feature which would give an accuracy of ";
+                        std::cout << "--Considering removing the " << k+1 << " feature which would give an accuracy of ";
 
 			
 						tempFeatures.clear();
@@ -135,7 +138,7 @@ void backwards_elimination(std::vector<Entry> data) {
 							}
 						}
                         currAccuracy = accuracy(data, tempFeatures);
-						std::cout << currAccuracy << "\n";
+						std::cout << std::setprecision(4)<< currAccuracy << "\n";
                         if(currAccuracy > bestSoFarAccuracy) {
                                 bestSoFarAccuracy = currAccuracy;
                                 featureToRemove = k;
@@ -147,25 +150,25 @@ void backwards_elimination(std::vector<Entry> data) {
                         bestFeatures = currFeatures;
                         bestAccuracy = bestSoFarAccuracy;
                 }
-				else{
+				if(bestAccuracy> bestSoFarAccuracy && ea == "y"){
 					std::cout << "Accuracy went down. stopping search"<< std::endl;
 					break;
 				}
-                std::cout << "On level " << i << " I removed " << featureToRemove << " from the current set.\n";
+                std::cout << "On level " << i << " I removed " << featureToRemove+1 << " from the current set.\n";
                 std::cout << "Current feature set is ";
 				if(currFeatures.empty()) {
 					std::cout << "empty.";
 				} else {
 	                for(int k = 0; k < currFeatures.size(); ++k) {
-        	                std::cout << currFeatures.at(k) << " ";
+        	                std::cout << currFeatures.at(k)+1 << " ";
                 	}
 				}
                 std::cout << "\n";
         }
-        std::cout << "\nHighest accuracy: " << bestAccuracy << "\n";
+        std::cout << "\nHighest accuracy: " <<std::setprecision(4)<< bestAccuracy << "\n";
         std::cout << "Using feature set: ";
         for(int i = 0; i < bestFeatures.size(); ++i) {
-                std::cout << bestFeatures.at(i) << ", ";
+                std::cout << bestFeatures.at(i)+1 << ", ";
         }
 
 }
@@ -211,7 +214,7 @@ std::vector<Entry> getData(std::string input) {
 
 //Birthdays: 07/21 and 06/21. So that means we would use small dataset 21, large dataset 21, and XXXlarge dataset 13.
 int main() {
-	std::string input;
+	std::string input, ea;
 	std::cout << "Enter 1 for small dataset, 2 for large dataset, 3 for XXXlarge dataset, or 4 for real-world dataset.\n";
 	std::cin >> input;
 	if(input == "1") {
@@ -228,13 +231,29 @@ int main() {
 	std::vector<Entry> data = getData(input);
 	std::cout << "Enter 1 for Forwards Selection, 2 for Backwards Elimination\n";
 	std::cin >> input;
+
+	std::cout << "Use ealry abandonment? y/n\n";
+	std::cin >> ea;
+
+	auto start = high_resolution_clock::now();
+
 	if(input == "1") {
-		forwards_selection(data);
+		forwards_selection(data,ea);
 	} else if(input == "2") {
-		backwards_elimination(data);
+		backwards_elimination(data,ea);
 	} else {
 		std::cout << "ERROR: invalid input\n";
 	}
+
+	auto stop = high_resolution_clock::now();
+ 
+    // Get duration. Substart timepoints to
+    // get duration. To cast it to proper unit
+    // use duration cast method
+    auto duration = duration_cast<seconds>(stop - start);
+ 
+    std::cout << "\nTime taken by function: "
+         << duration.count() << " seconds" << std::endl;
 }
 
 
